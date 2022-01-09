@@ -35,6 +35,14 @@ public class Wallet {
         this.publicKey = publicKey;
     }
 
+    public HashMap<String, TransactionOutput> getUTXOs() {
+        return UTXOs;
+    }
+
+    public void setUTXOs(HashMap<String, TransactionOutput> UTXOs) {
+        this.UTXOs = UTXOs;
+    }
+
     public void generateKeyPair() {
         try {
             KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("ECDSA", "BC");

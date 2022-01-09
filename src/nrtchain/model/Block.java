@@ -16,6 +16,8 @@ public class Block {
     private int nonce;
     private List<Transaction> transactions = new ArrayList<>();     // Our data will be a simple message
 
+    public Block() {}
+
     public Block(String previousHash) {
         this.previousHash = previousHash;
         LocalDate localDate = LocalDate.now();

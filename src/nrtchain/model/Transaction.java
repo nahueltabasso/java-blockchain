@@ -10,7 +10,7 @@ import java.util.List;
 
 public class Transaction {
 
-    private static int sequence = 0;
+    public static int sequence = 0;
     private String id;      // This is also the hash of transaction
     private PublicKey sender;   // Sender address/public key
     private PublicKey reciepient;   // Recipient addresss/public key
@@ -18,6 +18,8 @@ public class Transaction {
     private byte[] signature;
     private List<TransactionInput> inputs;
     private List<TransactionOutput> outputs;
+
+    public Transaction() {}
 
     public Transaction(PublicKey sender, PublicKey reciepient, Double value, List<TransactionInput> inputs) {
         this.inputs = new ArrayList<>();

@@ -1,6 +1,9 @@
 package nrtchain;
 
 import nrtchain.model.*;
+import nrtchain.services.BlockService;
+import nrtchain.services.TransactionService;
+import nrtchain.services.WalletService;
 import nrtchain.utils.StringUtil;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -18,6 +21,9 @@ public class Main {
     public static Wallet walletA;
     public static Wallet walletB;
     public static Transaction genesisTransaction;
+    public static BlockService blockService = new BlockService();
+    public static TransactionService transactionService = new TransactionService();
+    public static WalletService walletService = new WalletService();
 
     public static void main(String[] args) {
         // Setup Bouncey Castle as a Security Provider
@@ -29,8 +35,8 @@ public class Main {
         Wallet coinBase = new Wallet();
 
         // Create genesis transaction, which sends 100 Coins to walletA
-        genesisTransaction = new Transaction(coinBase.getPublicKey(), walletA.getPublicKey(), 100.0, null);
-        genesisTransaction.generateSignature(coinBase.getPrivateKey());
+        genesisTransaction = transactionService.setNewTransaction(coinBase.getPublicKey(), walletA.getPublicKey(), 100.0, null);
+        transactionService.generateSignature(genesisTransaction, coinBase.getPrivateKey());
         genesisTransaction.setId("0");      // Manually set the transaction id
         List<TransactionOutput> transactionOutputs = new ArrayList<>();
         transactionOutputs.add(new TransactionOutput(genesisTransaction.getReciepient(), genesisTransaction.getValue(), genesisTransaction.getId()));
@@ -38,47 +44,40 @@ public class Main {
         // Its important to store our first transaction in the UTXOs
         UTXOs.put(genesisTransaction.getOutputs().get(0).getId(), genesisTransaction.getOutputs().get(0));
 
-        System.out.println("Creating and Mining Genesis block...");
-        Block genesis = new Block("0");
-        genesis.addTransaction(genesisTransaction);
-        addBlock(genesis);
+        // Test to create the block with the service class
+        System.out.println("Now, let's create and mining the genesis copy block");
+        Block genesis = blockService.generateNewBlock("0");
+        blockService.addTransaction(genesis, genesisTransaction);
+        blockService.addBlock(genesis, difficulty);
 
         // Testing our app
-        Block block1 = new Block(genesis.getHash());
-        System.out.println("WalletA balance is: " + walletA.getBalance());
+        Block block1 = blockService.generateNewBlock(genesis.getHash());
+        System.out.println("WalletA balance is: " + walletService.getBalance(walletA));
         System.out.println("WalletA is Attempting to send funds (40) to walletB...");
-        block1.addTransaction(walletA.sendFunds(walletB.getPublicKey(), 40.0));
-        addBlock(block1);
-        System.out.println("WalletA balance is: " + walletA.getBalance());
-        System.out.println("WalletB balance is: " + walletB.getBalance());
+        Transaction transaction1 = walletService.sendFunds(walletA, walletB.getPublicKey(), 40.0);
+        blockService.addTransaction(block1, transaction1);
+        blockService.addBlock(block1, difficulty);
+        System.out.println("WalletA balance is: " + walletService.getBalance(walletA));
+        System.out.println("WalletB balance is: " + walletService.getBalance(walletB));
 
-        Block block2 = new Block(block1.getHash());
+        Block block2 = blockService.generateNewBlock(block1.getHash());
         System.out.println("WalletA Attempting to send more funds (1000) than it has...");
-        block2.addTransaction(walletA.sendFunds(walletB.getPublicKey(), 1000.0));
-        addBlock(block2);
-        System.out.println("WalletA balance is: " + walletA.getBalance());
-        System.out.println("WalletB balance is: " + walletB.getBalance());
+        Transaction transaction2 = walletService.sendFunds(walletA, walletB.getPublicKey(), 1000.0);
+        blockService.addTransaction(block2, transaction2);
+        blockService.addBlock(block2, difficulty);
+        System.out.println("WalletA balance is: " + walletService.getBalance(walletA));
+        System.out.println("WalletB balance is: " + walletService.getBalance(walletB));
 
-        Block block3 = new Block(block2.getHash());
+        Block block3 = blockService.generateNewBlock(block2.getHash());
         System.out.println("WalletB is Attempting to send funds (20) to walletA...");
-        block3.addTransaction(walletB.sendFunds(walletA.getPublicKey(), 20.0));
-        System.out.println("WalletA balance is: " + walletA.getBalance());
-        System.out.println("WalletB balance is: " + walletB.getBalance());
+        Transaction transaction3 = walletService.sendFunds(walletB, walletA.getPublicKey(), 20.0);
+        blockService.addTransaction(block3, transaction3);
+        blockService.addBlock(block3, difficulty);
+        System.out.println("WalletA balance is: " + walletService.getBalance(walletA));
+        System.out.println("WalletB balance is: " + walletService.getBalance(walletB));
 
         boolean isChainValid = isChainValid();
 
-        // Test public and private keys
-//        System.out.println("Private and public keys: ");
-//        System.out.println(StringUtil.getStringFromKey(walletA.getPrivateKey()));
-//        System.out.println(StringUtil.getStringFromKey(walletA.getPublicKey()));
-//
-//        // Create a test transaction from walletA to walletB
-//        Transaction transaction = new Transaction(walletA.getPublicKey(), walletB.getPublicKey(), 5.0, null);
-//        transaction.generateSignature(walletA.getPrivateKey());
-//
-//        // Verify the signature works and verify it from the public key
-//        System.out.println("Is signature verified");
-//        System.out.println(transaction.verifySignature());
     }
 
     public static Boolean isChainValid() {
